@@ -1,18 +1,25 @@
-import React from 'react'
+import React from 'react';
+import Navbar from './components/navbar';
+import Hero from './components/hero';
+import Features from './components/features';
+import StorySection from './components/storysection';
+import CategoriesSection from './components/categoriessection';
+import ReservationSection from './components/reservationsection';
+import Footer from './components/footer';
 
 function App() {
   return (
-    <div className="min-h-screen bg-stone-100 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-2xl shadow-xl text-center">
-        <h1 className="text-4xl font-bold text-emerald-700 mb-4">
-          Savannah Kitchen
-        </h1>
-        <p className="text-stone-500">
-          Tailwind CSS is working perfectly! 🎉
-        </p>
-      </div>
+    <div className="min-h-screen bg-[#F6F1E7]">
+      <Navbar />
+      <Hero />
+      <Features/>
+      <StorySection/>
+      <CategoriesSection/>
+      <ReservationSection/>
+      <Footer/>
+      
     </div>
   )
 }
 
-export default App
+export default App;
