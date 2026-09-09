@@ -1,14 +1,32 @@
 import React from 'react';
 import { UtensilsCrossed, MapPin, Phone, Mail, Send } from 'lucide-react';
-import { FaFacebookF, FaTwitter, FaInstagramSquare, FaYoutube,} from 'react-icons/fa';
+import { FaFacebookF, FaTwitter, FaInstagramSquare, FaYoutube } from 'react-icons/fa';
+import { useTheme } from '../context/themecontext';
+
+const navLinks = [
+  { name: 'Home', path: '/' },
+  { name: 'About Us', path: '/about' },
+  { name: 'Menu', path: '/menu' },
+  { name: 'Reservation', path: '/reservation' },
+  { name: 'Contact Us', path: '/contact' },
+];
 
 export default function Footer() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   return (
-    <footer className="bg-[#0c0a09] text-stone-400 pt-20 pb-10 border-t border-white/10">
+    <footer className={`pt-20 pb-10 border-t transition-colors duration-300 ${
+      isDark 
+        ? 'bg-[#0c0a09] text-stone-400 border-white/10' 
+        : 'bg-[#f4f2ec] text-stone-600 border-black/10'
+    }`}>
       <div className="max-w-7xl mx-auto px-5 md:px-8">
         
         {/* Main Footer Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-16 border-b border-white/10">
+        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-16 border-b ${
+          isDark ? 'border-white/10' : 'border-black/10'
+        }`}>
           
           {/* Column 1: Brand Info */}
           <div className="lg:col-span-1 space-y-4">
@@ -17,7 +35,11 @@ export default function Footer() {
                 <UtensilsCrossed size={18} className="text-[#C79A44]" />
               </div>
               <div className="leading-tight text-left">
-                <p className="font-serif font-bold text-white text-base tracking-widest">SAVANNAH</p>
+                <p className={`font-serif font-bold text-base tracking-widest ${
+                  isDark ? 'text-white' : 'text-[#12100e]'
+                }`}>
+                  SAVANNAH
+                </p>
                 <p className="text-[9px] tracking-[0.25em] text-[#C79A44] font-semibold">KITCHEN</p>
               </div>
             </div>
@@ -29,7 +51,13 @@ export default function Footer() {
             {/* Social Icons */}
             <div className="flex items-center gap-3 pt-2">
               {[FaFacebookF, FaInstagramSquare, FaTwitter, FaYoutube].map((Icon, idx) => (
-                <a key={idx} href="#" className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-[#C79A44] hover:text-[#12100e] hover:border-[#C79A44] transition-all">
+                <a 
+                  key={idx} 
+                  href="#" 
+                  className={`w-8 h-8 rounded-full border flex items-center justify-center hover:bg-[#C79A44] hover:text-[#12100e] hover:border-[#C79A44] transition-all ${
+                    isDark ? 'bg-white/5 border-white/10 text-stone-300' : 'bg-black/5 border-black/10 text-stone-700'
+                  }`}
+                >
                   <Icon size={14} />
                 </a>
               ))}
@@ -38,13 +66,21 @@ export default function Footer() {
 
           {/* Column 2: Quick Links */}
           <div className="space-y-3">
-            <h4 className="font-sans  text-sm font-bold tracking-[0.15em] text-white uppercase">
+            <h4 className={`font-sans text-sm font-bold tracking-[0.15em] uppercase ${
+              isDark ? 'text-white' : 'text-[#12100e]'
+            }`}>
               Quick Links
             </h4>
+            
             <ul className="space-y-2 text-xs">
-              {['Home', 'About Us', 'Menu', 'Reservation', 'Contact Us'].map((item, idx) => (
+              {navLinks.map((item, idx) => (
                 <li key={idx}>
-                  <a href="#" className="hover:text-[#C79A44] transition-colors">{item}</a>
+                  <a 
+                    href={item.path} 
+                    className="hover:text-[#C79A44] transition-colors"
+                  >
+                    {item.name}
+                  </a>
                 </li>
               ))}
             </ul>
@@ -52,13 +88,15 @@ export default function Footer() {
 
           {/* Column 3: Our Menu */}
           <div className="space-y-3">
-            <h4 className="font-sans  text-sm font-bold tracking-[0.15em] text-white uppercase">
+            <h4 className={`font-sans text-sm font-bold tracking-[0.15em] uppercase ${
+              isDark ? 'text-white' : 'text-[#12100e]'
+            }`}>
               Our Menu
             </h4>
             <ul className="space-y-2 text-xs">
               {['Pizza', 'Burgers', 'Pasta', 'Salads', 'Desserts', 'Drinks'].map((item, idx) => (
                 <li key={idx}>
-                  <a href="#" className="hover:text-[#C79A44] transition-colors">{item}</a>
+                  <a href="/menu" className="hover:text-[#C79A44] transition-colors">{item}</a>
                 </li>
               ))}
             </ul>
@@ -66,7 +104,9 @@ export default function Footer() {
 
           {/* Column 4: Contact Us */}
           <div className="space-y-3">
-            <h4 className="font-sans  text-sm font-bold tracking-[0.15em] text-white uppercase">
+            <h4 className={`font-sans text-sm font-bold tracking-[0.15em] uppercase ${
+              isDark ? 'text-white' : 'text-[#12100e]'
+            }`}>
               Contact Us
             </h4>
             <ul className="space-y-3 text-xs">
@@ -87,18 +127,24 @@ export default function Footer() {
 
           {/* Column 5: Newsletter */}
           <div className="space-y-3">
-            <h4 className="font-sans  text-sm font-bold tracking-[0.15em] text-white uppercase">
+            <h4 className={`font-sans text-sm font-bold tracking-[0.15em] uppercase ${
+              isDark ? 'text-white' : 'text-[#12100e]'
+            }`}>
               Newsletter
             </h4>
-            <p className="text-xs text-stone-400">
+            <p className={`text-xs ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>
               Subscribe to get the latest updates and offers from Savannah Kitchen.
             </p>
 
-            <form onSubmit={(e) => e.preventDefault()} className="flex items-center bg-[#1a1714] border border-white/10 rounded-xl overflow-hidden focus-within:border-[#C79A44] transition-colors">
+            <form onSubmit={(e) => e.preventDefault()} className={`flex items-center border rounded-xl overflow-hidden focus-within:border-[#C79A44] transition-colors ${
+              isDark ? 'bg-[#1a1714] border-white/10' : 'bg-white border-black/15 shadow-sm'
+            }`}>
               <input 
                 type="email" 
                 placeholder="Enter your email" 
-                className="bg-transparent text-xs text-white px-3.5 py-3 outline-none w-full"
+                className={`bg-transparent text-xs px-3.5 py-3 outline-none w-full ${
+                  isDark ? 'text-white placeholder-stone-500' : 'text-[#12100e] placeholder-stone-400'
+                }`}
               />
               <button type="submit" className="bg-[#C79A44] text-[#12100e] px-4 py-3 hover:bg-[#b3872f] transition-colors shrink-0">
                 <Send size={15} />
@@ -109,11 +155,13 @@ export default function Footer() {
         </div>
 
         {/* Bottom Copyright Bar */}
-        <div className="pt-8 flex flex-col md:flex-row items-center justify-between text-[11px] text-stone-500 gap-4">
+        <div className={`pt-8 flex flex-col md:flex-row items-center justify-between text-[11px] gap-4 ${
+          isDark ? 'text-stone-500' : 'text-stone-500'
+        }`}>
           <p>© 2026 Savannah Kitchen. All Rights Reserved.</p>
           <div className="flex items-center gap-6">
-            <a href="#" className="hover:text-stone-300 transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-stone-300 transition-colors">Terms & Conditions</a>
+            <a href="#" className={`transition-colors ${isDark ? 'hover:text-stone-300' : 'hover:text-stone-800'}`}>Privacy Policy</a>
+            <a href="#" className={`transition-colors ${isDark ? 'hover:text-stone-300' : 'hover:text-stone-800'}`}>Terms & Conditions</a>
           </div>
         </div>
 

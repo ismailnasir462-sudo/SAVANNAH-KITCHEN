@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Utensils, Play } from 'lucide-react';
-import EatingVideo from '../assets/images/video-1.mp4';
+import { useTheme } from '../context/themecontext';
+import EatingVideo from '/images/video-1.mp4';
 
 export default function Hero() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const slides = [
     {
       type: 'video',
@@ -20,7 +24,7 @@ export default function Hero() {
 
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Automatically cycle through slides every 7 seconds with a smooth flow
+  // Automatically cycle through slides every 7 seconds
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % slides.length);
@@ -29,7 +33,7 @@ export default function Hero() {
   }, [slides.length]);
 
   return (
-    <section className="relative min-h-[85vh] flex items-center overflow-hidden bg-[#12100e] text-white">
+    <section className={`relative min-h-[85vh] flex items-center overflow-hidden transition-colors duration-300 `}>
       {/* Background Media Container with Smooth Cross-fade */}
       <div className="absolute inset-0">
         {slides.map((slide, index) => (
@@ -45,7 +49,7 @@ export default function Hero() {
                 loop
                 muted
                 playsInline
-                className="w-full h-full object-cover opacity-100 scale-105"
+                className="w-full h-full object-cover scale-105"
               >
                 <source src={slide.url} type="video/mp4" />
               </video>
@@ -53,13 +57,18 @@ export default function Hero() {
               <img 
                 src={slide.url} 
                 alt="Restaurant slide background" 
-                className="w-full h-full object-cover opacity-100 scale-105" 
+                className="w-full h-full object-cover scale-105" 
               />
             )}
           </div>
         ))}
-        {/* Dark Gradient Overlay for readability (placed above background media with high z-index) */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#12100e] via-[#12100e]/80 to-transparent z-20 pointer-events-none" />
+
+        {/* Dynamic Gradient Overlay for Readability */}
+        <div className={`absolute inset-0 z-20 pointer-events-none transition-colors duration-300 ${
+          isDark 
+            ? 'bg-gradient-to-r from-[#12100e] via-[#12100e]/80 to-transparent' 
+            : 'bg-gradient-to-r from-[#12100e] via-[[#12100e]/85 to-transparent'
+        }`} />
       </div>
       
       {/* Hero Content */}
@@ -69,21 +78,39 @@ export default function Hero() {
             Welcome to Savannah Kitchen
           </p>
           
-          <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl font-bold leading-[1.1] text-white tracking-wide">
+          <h1 className={`font-serif text-5xl sm:text-6xl md:text-7xl font-bold leading-[1.1] tracking-wide ${
+            isDark ? 'text-white' : 'text-white'
+          }`}>
             Great Food<br />
             <span className="text-[#C79A44]">Warm Vibes</span>
           </h1>
-          <p className="text-stone-300 mt-6 max-w-md text-base leading-relaxed">
+
+          <p className={`mt-6 max-w-md text-base leading-relaxed ${
+            isDark ? 'text-stone-300' : 'text-stone-300'
+          }`}>
             Experience rich, soulful dishes made with fresh ingredients and a touch of home. Every bite tells a story.
           </p>
           
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-4 mt-8">
-            <button className="bg-[#C79A44] text-[#12100e] font-bold text-xs uppercase tracking-widest px-8 py-4 rounded-full hover:bg-[#b3872f] transition-colors flex items-center gap-2 shadow-lg">
+            <a 
+              href="/menu" 
+              className="bg-[#C79A44] text-[#12100e] font-bold text-xs uppercase tracking-widest px-8 py-4 rounded-full hover:bg-[#b3872f] transition-colors flex items-center gap-2 shadow-lg inline-flex cursor-pointer"
+            >
               Explore Menu <Utensils size={15} />
-            </button>
-            <button className="border border-white/30 text-white font-bold text-xs uppercase tracking-widest px-8 py-4 rounded-full hover:bg-white/10 transition-colors flex items-center gap-2">
-              <span className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center"><Play size={12} className="fill-current" /></span> Our Story
+            </a>
+
+            <button className={`border font-bold text-xs uppercase tracking-widest px-8 py-4 rounded-full transition-colors flex items-center gap-2 cursor-pointer ${
+              isDark 
+                ? 'border-white/30 text-white hover:bg-white/10' 
+                : 'border-white/30 text-white hover:bg-white/10'
+            }`}>
+              <span className={`w-7 h-7 rounded-full flex items-center justify-center ${
+                isDark ? 'bg-white/20' : 'bg-white/20'
+              }`}>
+                <Play size={12} className="fill-current" />
+              </span> 
+              Our Story
             </button>
           </div>
         </div>
@@ -95,7 +122,7 @@ export default function Hero() {
           <button
             key={index}
             onClick={() => setCurrentIndex(index)}
-            className={`transition-all duration-500 rounded-full border border-[#C79A44] ${
+            className={`transition-all duration-500 rounded-full border border-[#C79A44] cursor-pointer ${
               currentIndex === index 
                 ? 'w-8 h-2.5 bg-[#C79A44]' 
                 : 'w-2.5 h-2.5 bg-transparent hover:bg-[#C79A44]/50'

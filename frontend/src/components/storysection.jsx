@@ -1,18 +1,30 @@
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
-import {motion} from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useTheme } from '../context/themecontext';
 
 export default function StorySection() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   return (
-    <section className="relative bg-[#12100e] text-white py-24 overflow-hidden border-b border-white/10">
-      {/* Background Image with Dark Overlay */}
+    <section className={`relative py-24 overflow-hidden border-b transition-colors duration-300 ${
+      isDark ? 'bg-[#12100e] text-white border-white/10' : 'bg-[#fcfbf7] text-[#12100e] border-black/10'
+    }`}>
+      {/* Background Image with Dynamic Theme Overlay */}
       <div className="absolute inset-0">
         <img 
           src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=1800&q=80" 
           alt="Restaurant kitchen background" 
-          className="w-full h-full object-cover opacity-200"
+          className={`w-full h-full object-cover transition-opacity duration-300 ${
+            isDark ? 'opacity-70' : 'opacity-70'
+          }`}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#12100e] via-[#12100e]/80 to-transparent" />
+        <div className={`absolute inset-0 transition-colors duration-300 ${
+          isDark 
+            ? 'bg-gradient-to-r from-[#12100e] via-[#12100e]/50 to-transparent' 
+            : 'bg-gradient-to-r from-[#12100e] via-[#12100e]/50 to-transparent'
+        }`} />
       </div>
 
       {/* Content Container */}
@@ -26,27 +38,37 @@ export default function StorySection() {
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
           <p className="font-script text-[#C79A44] text-2xl mb-2">Our Story</p>
-          <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold leading-tight mb-6 text-white">
+          <h2 className={`font-serif text-3xl sm:text-4xl md:text-5xl font-bold leading-tight mb-6 ${
+            isDark ? 'text-white' : 'text-white'
+          }`}>
             Cooking with Heart<br />
             <span className="text-[#C79A44]">Serving with Love</span>
           </h2>
           
-          <p className="text-stone-300 text-sm md:text-base leading-relaxed mb-8">
-            At Savannah Kitchen, we believe food is more than a meal...it’s an experience. From traditional recipes to modern twists, we bring people together through flavor, culture, and warmth.</p>
+          <p className={`text-sm md:text-base leading-relaxed mb-8 ${
+            isDark ? 'text-stone-300' : 'text-stone-300'
+          }`}>
+            At Savannah Kitchen, we believe food is more than a meal...it’s an experience. From traditional recipes to modern twists, we bring people together through flavor, culture, and warmth.
+          </p>
 
-          <button className="inline-flex items-center gap-2 bg-[#7A2A32] text-white font-bold text-xs uppercase tracking-widest px-8 py-4 rounded-full hover:bg-[#632127] transition-colors shadow-lg">
+          <a
+            href="/about"
+            className="inline-flex items-center gap-2 bg-[#7A2A32] text-white font-bold text-xs uppercase tracking-widest px-8 py-4 rounded-full hover:bg-[#632127] transition-colors shadow-lg cursor-pointer"
+          >
             Read More About Us <ArrowRight size={16} />
-          </button>
+          </a>
         </motion.div>
 
         {/* Right Side: High-End Food Dish Photo Collage */}
         <motion.div
-          initial={{ opacity: 0, x: -50 }}
+          initial={{ opacity: 0, x: 50 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: false, amount: 0.3 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
-          <div className="relative w-full max-w-[480px] aspect-square rounded-full overflow-hidden border-4 border-[#C79A44]/30 shadow-2xl p-2 bg-[#1a1714]">
+          <div className={`relative w-full max-w-[480px] aspect-square rounded-full overflow-hidden border-4 border-[#C79A44]/30 shadow-2xl p-2 transition-colors duration-300 ${
+            isDark ? 'bg-[#1a1714]' : 'bg-white'
+          }`}>
             <img 
               src="https://images.unsplash.com/photo-1546549032-9571cd6b27df?auto=format&fit=crop&w=1000&q=80" 
               alt="Fresh gourmet pasta dish" 
