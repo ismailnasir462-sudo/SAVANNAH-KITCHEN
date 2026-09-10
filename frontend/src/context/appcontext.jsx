@@ -101,12 +101,16 @@ export function AppProvider({ children }) {
 
   const updateReservationStatus = async (id, status) => {
     try {
-      await axios.put(`${API_BASE_URL}/reservations/${id}`, { status });
-      setReservations((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, status } : r))
-      );
+      const res = await axios.put(`${API_BASE_URL}/reservations/${id}/status`, { status });
+      if (res.data.success || res.status === 200) {
+        setReservations((prev) =>
+          prev.map((r) => (r.id === id ? { ...r, status } : r))
+        );
+        fetchAllData(); // Sync live data across dashboard
+      }
     } catch (error) {
       console.error('Error updating reservation status:', error);
+      alert('Failed to update reservation status.');
     }
   };
 

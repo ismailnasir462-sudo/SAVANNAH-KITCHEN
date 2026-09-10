@@ -24,7 +24,7 @@ export default function Navbar({ cartCount = 0, onOpenCart }) {
   const { currentUser, logoutCustomer } = useApp() || {};
   const isDark = theme === 'dark';
 
-  // State Management
+  // Modal & Menu States
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -32,7 +32,7 @@ export default function Navbar({ cartCount = 0, onOpenCart }) {
 
   const dropdownRef = useRef(null);
 
-  // Close account dropdown when clicking outside
+  // Close desktop user dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -45,7 +45,8 @@ export default function Navbar({ cartCount = 0, onOpenCart }) {
 
   const handleLogout = () => {
     setIsDropdownOpen(false);
-    logoutCustomer();
+    setIsMobileMenuOpen(false);
+    if (logoutCustomer) logoutCustomer();
     navigate('/');
   };
 
@@ -70,48 +71,53 @@ export default function Navbar({ cartCount = 0, onOpenCart }) {
       } backdrop-blur-md`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           
-          {/* Brand Logo & Welcome Badge */}
-          <div className="flex items-center gap-3 md:gap-4">
-            <Link to="/" className="flex flex-col">
-              <span className="font-script text-[#C79A44] text-2xl leading-none">Savannah</span>
-              <span className="font-serif font-bold text-sm tracking-widest uppercase">Kitchen</span>
-            </Link>
+          {/* Brand Logo */}
+          <Link to="/" className="flex flex-col">
+            <span className="font-script text-[#C79A44] text-2xl leading-none">Savannah</span>
+            <span className={`font-serif font-bold text-sm tracking-widest uppercase ${
+              isDark ? 'text-stone-400' : 'text-[#12100e]'
+            }`}>
+              Kitchen
+            </span>
+          </Link>
 
-            
-            
-          </div>
-
-          {/* Desktop Navigation Links with Active Page Highlighting */}
+          {/* Desktop Navigation Links (Black text in light mode, active gold) */}
           <nav className="hidden md:flex items-center gap-8 text-xs font-bold uppercase tracking-widest">
-            {navItems.map((item, idx) => (
-              <Link
-                key={idx}
-                to={item.path}
-                className={`transition-colors hover:text-[#C79A44] ${
-                  location.pathname === item.path ? 'text-[#C79A44]' : ''
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {navItems.map((item, idx) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <Link
+                  key={idx}
+                  to={item.path}
+                  className={`transition-colors hover:text-[#C79A44] ${
+                    isActive 
+                      ? 'text-[#C79A44]' 
+                      : isDark ? 'text-stone-300' : 'text-[#12100e]'
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </nav>
 
-          {/* Right Utility Actions */}
-          <div className="flex items-center gap-4">
+          {/* Utility Actions */}
+          <div className="flex items-center gap-3 md:gap-4">
             
             {/* Theme Switcher Button */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-xl border border-stone-500/20 hover:border-[#C79A44] transition-colors cursor-pointer text-[#C79A44]"
-              title="Toggle Theme"
+              className="p-2.5 rounded-full border border-stone-500/20 hover:border-[#C79A44] transition-colors cursor-pointer text-[#C79A44]"
+              aria-label="Toggle Theme"
             >
               {isDark ? <Sun size={18} /> : <Moon size={18} />}
             </button>
 
-            {/* Cart Button with Counter */}
+            {/* Shopping Cart Button */}
             <button
               onClick={onOpenCart}
-              className="relative p-2 rounded-xl border border-stone-500/20 hover:border-[#C79A44] transition-colors cursor-pointer"
+              className="relative p-2.5 rounded-full border border-stone-500/20 hover:border-[#C79A44] transition-colors cursor-pointer"
+              aria-label="View Shopping Cart"
             >
               <ShoppingBag size={18} className="text-[#C79A44]" />
               {cartCount > 0 && (
@@ -121,61 +127,59 @@ export default function Navbar({ cartCount = 0, onOpenCart }) {
               )}
             </button>
 
-            {/* Reinstated Order Online Action Button */}
+            {/* Online Order Button */}
             <Link 
               to="/menu" 
-              className="hidden lg:inline-flex items-center gap-1.5 bg-[#C79A44] text-[#12100e] text-xs font-bold tracking-wider uppercase px-4 py-2.5 rounded-xl hover:bg-[#b3872f] transition-colors"
+              className="hidden lg:inline-flex items-center gap-1.5 bg-[#C79A44] text-[#12100e] text-xs font-bold tracking-wider uppercase px-4 py-2.5 rounded-full hover:bg-[#b3872f] transition-colors"
             >
               Order Online
             </Link>
 
-            {/* Account Dropdown or Sign In Trigger Modal */}
+            {/* Account Menu / Auth Button */}
             {currentUser ? (
               <div className="relative" ref={dropdownRef}>
-                
-                {/* User Account Trigger Button */}
                 <button
                   onClick={() => setIsDropdownOpen(prev => !prev)}
                   className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                     isDropdownOpen
                       ? 'border-[#C79A44] bg-[#C79A44]/10 text-[#C79A44]'
-                      : isDark ? 'border-white/15 text-stone-200 hover:border-[#C79A44]' : 'border-black/15 text-stone-800 hover:border-[#C79A44]'
+                      : isDark 
+                        ? 'border-white/15 text-stone-200 hover:border-[#C79A44]' 
+                        : 'border-black/20 text-[#12100e] hover:border-[#C79A44]'
                   }`}
                 >
                   <div className="w-6 h-6 rounded-full bg-[#C79A44] text-[#12100e] flex items-center justify-center font-bold text-[11px]">
                     {currentUser.first_name ? currentUser.first_name[0].toUpperCase() : 'U'}
                   </div>
-                  <span className="max-w-[100px] truncate">{currentUser.first_name || 'Account'}</span>
+                  <span className="max-w-[90px] truncate hidden sm:inline">{currentUser.first_name || 'Account'}</span>
                   <ChevronDown size={14} className={`transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
-                {/* Account Settings & Orders Dropdown Menu */}
+                {/* Dropdown Menu */}
                 {isDropdownOpen && (
                   <div className={`absolute right-0 mt-2 w-52 rounded-2xl border shadow-2xl py-2 z-50 transition-all ${
                     isDark ? 'bg-[#1a1714] border-white/10 text-white' : 'bg-white border-black/10 text-[#12100e]'
                   }`}>
                     <div className="px-4 py-2 border-b border-stone-500/10 mb-1">
-                      <p className="text-[10px] uppercase font-bold text-stone-400">Signed in as</p>
+                      <p className={`text-[10px] uppercase font-bold ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>Signed in as</p>
                       <p className="text-xs font-bold truncate text-[#C79A44]">{currentUser.email}</p>
                     </div>
 
-                    {/* 1. Account Settings Modal Trigger */}
                     <button
                       onClick={handleOpenSettings}
                       className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold transition-colors text-left cursor-pointer ${
-                        isDark ? 'hover:bg-white/5 text-stone-200' : 'hover:bg-black/5 text-stone-700'
+                        isDark ? 'hover:bg-white/5 text-stone-200' : 'hover:bg-black/5 text-[#12100e]'
                       }`}
                     >
-                      <Settings size={15} className="text-stone-400" />
+                      <Settings size={15} className={isDark ? "text-stone-400" : "text-stone-600"} />
                       <span>Account Settings</span>
                     </button>
 
-                    {/* 2. My Orders Link */}
                     <Link
                       to="/my-orders"
                       onClick={() => setIsDropdownOpen(false)}
                       className={`flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold transition-colors ${
-                        isDark ? 'hover:bg-white/5 text-stone-200' : 'hover:bg-black/5 text-stone-700'
+                        isDark ? 'hover:bg-white/5 text-stone-200' : 'hover:bg-black/5 text-[#12100e]'
                       }`}
                     >
                       <Package size={15} className="text-[#C79A44]" />
@@ -184,7 +188,6 @@ export default function Navbar({ cartCount = 0, onOpenCart }) {
 
                     <div className="my-1 border-t border-stone-500/10" />
 
-                    {/* 3. Sign Out Button */}
                     <button
                       onClick={handleLogout}
                       className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer text-left"
@@ -194,22 +197,21 @@ export default function Navbar({ cartCount = 0, onOpenCart }) {
                     </button>
                   </div>
                 )}
-
               </div>
             ) : (
-              /* Sign In Button Triggers Customer Auth Modal */
               <button
                 onClick={() => setIsAuthModalOpen(true)}
-                className="hidden sm:flex items-center gap-2 bg-[#C79A44] text-[#12100e] text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-xl hover:bg-[#b3872f] transition-colors cursor-pointer"
+                className="hidden sm:flex items-center gap-2 bg-[#C79A44] text-[#12100e] text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-full hover:bg-[#b3872f] transition-colors cursor-pointer"
               >
                 <User size={15} /> Sign In
               </button>
             )}
 
-            {/* Mobile Drawer Menu Toggle */}
+            {/* Mobile Navigation Toggle */}
             <button
               onClick={() => setIsMobileMenuOpen(prev => !prev)}
-              className="md:hidden p-2 rounded-xl border border-stone-500/20 text-stone-400 hover:text-white cursor-pointer"
+              className="md:hidden p-2.5 rounded-xl border border-stone-500/20 text-[#C79A44] cursor-pointer"
+              aria-label="Toggle Mobile Menu"
             >
               {isMobileMenuOpen ? <X size={20} /> : <MenuIcon size={20} />}
             </button>
@@ -219,36 +221,64 @@ export default function Navbar({ cartCount = 0, onOpenCart }) {
 
         {/* Mobile Navigation Drawer */}
         {isMobileMenuOpen && (
-          <div className={`md:hidden border-t px-4 py-6 space-y-4 ${
-            isDark ? 'bg-[#12100e] border-white/10' : 'bg-[#fcfbf7] border-black/10'
+          <div className={`md:hidden border-t px-6 py-6 space-y-4 ${
+            isDark ? 'bg-[#12100e] border-white/10 text-white' : 'bg-white border-black/10 text-[#12100e]'
           }`}>
             <nav className="flex flex-col space-y-3 text-xs font-bold uppercase tracking-wider">
-              {navItems.map((item, idx) => (
-                <Link 
-                  key={idx} 
-                  to={item.path} 
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={location.pathname === item.path ? 'text-[#C79A44]' : ''}
-                >
-                  {item.label}
-                </Link>
-              ))}
+              {navItems.map((item, idx) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <Link 
+                    key={idx} 
+                    to={item.path} 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`py-1 ${
+                      isActive 
+                        ? 'text-[#C79A44]' 
+                        : isDark ? 'text-stone-300' : 'text-[#12100e]'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+
+              <div className="border-t border-stone-500/20 my-2 pt-3" />
+
               {currentUser ? (
-                <>
-                  <div className="border-t border-stone-500/10 my-2 pt-2" />
-                  <button onClick={handleOpenSettings} className="text-left font-bold cursor-pointer">Account Settings</button>
-                  <Link to="/my-orders" onClick={() => setIsMobileMenuOpen(false)} className="text-[#C79A44]">My Orders</Link>
-                  <button onClick={handleLogout} className="text-red-500 text-left font-bold cursor-pointer">Sign Out</button>
-                </>
+                <div className="space-y-3">
+                  <p className={`text-[10px] font-bold uppercase ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>Account</p>
+                  <button 
+                    onClick={handleOpenSettings} 
+                    className={`w-full flex items-center gap-2 text-left font-bold text-xs ${
+                      isDark ? 'text-white' : 'text-[#12100e]'
+                    }`}
+                  >
+                    <Settings size={15} /> Account Settings
+                  </button>
+                  <Link 
+                    to="/my-orders" 
+                    onClick={() => setIsMobileMenuOpen(false)} 
+                    className="flex items-center gap-2 text-[#C79A44] font-bold text-xs"
+                  >
+                    <Package size={15} /> My Orders
+                  </Link>
+                  <button 
+                    onClick={handleLogout} 
+                    className="w-full flex items-center gap-2 text-red-500 text-left font-bold text-xs pt-1"
+                  >
+                    <LogOut size={15} /> Sign Out
+                  </button>
+                </div>
               ) : (
                 <button 
                   onClick={() => {
                     setIsMobileMenuOpen(false);
                     setIsAuthModalOpen(true);
                   }} 
-                  className="text-[#C79A44] text-left font-bold cursor-pointer pt-2"
+                  className="w-full flex items-center justify-center gap-2 bg-[#C79A44] text-[#12100e] text-xs font-bold uppercase py-3 rounded-xl cursor-pointer"
                 >
-                  Sign In / Register
+                  <User size={15} /> Sign In / Register
                 </button>
               )}
             </nav>
@@ -256,14 +286,14 @@ export default function Navbar({ cartCount = 0, onOpenCart }) {
         )}
       </header>
 
-      {/* Auth Pop-up Modal */}
+      {/* Customer Authentication Modal */}
       <CustomerAuthModal 
         isOpen={isAuthModalOpen} 
         onClose={() => setIsAuthModalOpen(false)} 
         onContinueAsGuest={() => setIsAuthModalOpen(false)} 
       />
 
-      {/* Account Settings Pop-up Modal */}
+      {/* Account Settings Modal */}
       {isSettingsOpen && (
         <AccountSettingsModal 
           isOpen={isSettingsOpen} 

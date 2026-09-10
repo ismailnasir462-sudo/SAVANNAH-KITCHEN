@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { FacebookProvider } from 'react-facebook';
@@ -27,26 +27,53 @@ const FACEBOOK_APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID || 'YOUR_FACEBOOK_A
 function MainLayout() {
   const navigate = useNavigate();
   const { theme } = useTheme();
-  const { currentUser } = useApp() || {};
+  const { currentUser, logoutCustomer } = useApp() || {};
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
 
+  // --- Customer Inactivity Auto-Logout (15 Minutes) ---
+  const inactivityTimerRef = useRef(null);
+  const INACTIVITY_LIMIT_MS = 15 * 60 * 1000; // 15 minutes
+
+  useEffect(() => {
+    // Only track inactivity if a customer is logged in and not on the admin route
+    if (!currentUser || isAdminRoute) return;
+
+    const resetInactivityTimer = () => {
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+
+      inactivityTimerRef.current = setTimeout(() => {
+        alert("Session expired due to 15 minutes of inactivity. Logging out.");
+        if (logoutCustomer) logoutCustomer();
+        navigate('/', { replace: true });
+      }, INACTIVITY_LIMIT_MS);
+    };
+
+    // User activity events to listen for
+    const activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    activityEvents.forEach(event => window.addEventListener(event, resetInactivityTimer));
+
+    // Initialize timer on load
+    resetInactivityTimer();
+
+    return () => {
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+      activityEvents.forEach(event => window.removeEventListener(event, resetInactivityTimer));
+    };
+  }, [currentUser, isAdminRoute, navigate, logoutCustomer]);
+
   // --- Disable Browser Scroll Restoration & Redirect on Refresh ---
   useLayoutEffect(() => {
-    // 1. Turn off default browser scroll memory
     if ('scrollRestoration' in window.history) {
       window.history.scrollRestoration = 'manual';
     }
 
-    // 2. Detect page refresh / reload
     const navEntries = performance.getEntriesByType('navigation');
     const isReload = navEntries.length > 0 && navEntries[0].type === 'reload';
 
     if (isReload) {
-      // 3. Force instant scroll reset to top-left
       document.documentElement.scrollTo({ top: 0, left: 0, behavior: 'instant' });
 
-      // 4. Redirect to landing page ('/') if not on admin route
       if (!isAdminRoute && location.pathname !== '/') {
         navigate('/', { replace: true });
       }
@@ -58,10 +85,10 @@ function MainLayout() {
     document.documentElement.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [location.pathname]);
 
-  // --- 1. Dynamic User-Isolated Cart Key ---
+  // --- Dynamic User-Isolated Cart Key ---
   const cartKey = currentUser?.id ? `cart_user_${currentUser.id}` : 'cart_guest';
 
-  // --- 2. Initialize Cart State from Active User Key ---
+  // --- Initialize Cart State from Active User Key ---
   const [cart, setCart] = useState(() => {
     const savedCart = localStorage.getItem(cartKey);
     return savedCart ? JSON.parse(savedCart) : [];
@@ -69,7 +96,7 @@ function MainLayout() {
 
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // --- 3. Handle Cart Switching & Clear Guest Cart on Logout ---
+  // --- Handle Cart Switching & Clear Guest Cart on Logout ---
   useEffect(() => {
     if (currentUser?.id) {
       const savedCart = localStorage.getItem(`cart_user_${currentUser.id}`);
@@ -80,7 +107,7 @@ function MainLayout() {
     }
   }, [currentUser?.id]);
 
-  // --- 4. Persist Cart Updates to Active Key ---
+  // --- Persist Cart Updates to Active Key ---
   useEffect(() => {
     const activeKey = currentUser?.id ? `cart_user_${currentUser.id}` : 'cart_guest';
     localStorage.setItem(activeKey, JSON.stringify(cart));
