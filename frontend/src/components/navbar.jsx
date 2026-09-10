@@ -242,45 +242,6 @@ export default function Navbar({ cartCount = 0, onOpenCart }) {
                   </Link>
                 );
               })}
-
-              <div className="border-t border-stone-500/20 my-2 pt-3" />
-
-              {currentUser ? (
-                <div className="space-y-3">
-                  <p className={`text-[10px] font-bold uppercase ${isDark ? 'text-stone-400' : 'text-stone-600'}`}>Account</p>
-                  <button 
-                    onClick={handleOpenSettings} 
-                    className={`w-full flex items-center gap-2 text-left font-bold text-xs ${
-                      isDark ? 'text-white' : 'text-[#12100e]'
-                    }`}
-                  >
-                    <Settings size={15} /> Account Settings
-                  </button>
-                  <Link 
-                    to="/my-orders" 
-                    onClick={() => setIsMobileMenuOpen(false)} 
-                    className="flex items-center gap-2 text-[#C79A44] font-bold text-xs"
-                  >
-                    <Package size={15} /> My Orders
-                  </Link>
-                  <button 
-                    onClick={handleLogout} 
-                    className="w-full flex items-center gap-2 text-red-500 text-left font-bold text-xs pt-1"
-                  >
-                    <LogOut size={15} /> Sign Out
-                  </button>
-                </div>
-              ) : (
-                <button 
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    setIsAuthModalOpen(true);
-                  }} 
-                  className="w-full flex items-center justify-center gap-2 bg-[#C79A44] text-[#12100e] text-xs font-bold uppercase py-3 rounded-xl cursor-pointer"
-                >
-                  <User size={15} /> Sign In / Register
-                </button>
-              )}
             </nav>
           </div>
         )}

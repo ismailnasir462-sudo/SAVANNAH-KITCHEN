@@ -32,33 +32,34 @@ function MainLayout() {
   const isAdminRoute = location.pathname.startsWith('/admin');
 
   // --- Customer Inactivity Auto-Logout (15 Minutes) ---
-  const inactivityTimerRef = useRef(null);
+  const lastActivityRef = useRef(Date.now());
   const INACTIVITY_LIMIT_MS = 15 * 60 * 1000; // 15 minutes
 
   useEffect(() => {
     // Only track inactivity if a customer is logged in and not on the admin route
     if (!currentUser || isAdminRoute) return;
 
-    const resetInactivityTimer = () => {
-      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+    // Update the timestamp whenever the user interacts
+    const updateActivity = () => {
+      lastActivityRef.current = Date.now();
+    };
 
-      inactivityTimerRef.current = setTimeout(() => {
+    // User activity events to listen for (passive for better performance)
+    const activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    activityEvents.forEach(event => window.addEventListener(event, updateActivity, { passive: true }));
+
+    // Check every 1 minute if 15 minutes have passed since the last activity
+    const intervalId = setInterval(() => {
+      if (Date.now() - lastActivityRef.current >= INACTIVITY_LIMIT_MS) {
         alert("Session expired due to 15 minutes of inactivity. Logging out.");
         if (logoutCustomer) logoutCustomer();
         navigate('/', { replace: true });
-      }, INACTIVITY_LIMIT_MS);
-    };
-
-    // User activity events to listen for
-    const activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
-    activityEvents.forEach(event => window.addEventListener(event, resetInactivityTimer));
-
-    // Initialize timer on load
-    resetInactivityTimer();
+      }
+    }, 60000); // Runs once every 60 seconds
 
     return () => {
-      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
-      activityEvents.forEach(event => window.removeEventListener(event, resetInactivityTimer));
+      clearInterval(intervalId);
+      activityEvents.forEach(event => window.removeEventListener(event, updateActivity));
     };
   }, [currentUser, isAdminRoute, navigate, logoutCustomer]);
 
