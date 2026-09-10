@@ -242,6 +242,23 @@ export default function Navbar({ cartCount = 0, onOpenCart }) {
                   </Link>
                 );
               })}
+
+              <div className="border-t border-stone-500/20 my-2 pt-3" />
+
+              {currentUser ? (
+                <div className="space-y-3">
+                </div>
+              ) : (
+                <button 
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setIsAuthModalOpen(true);
+                  }} 
+                  className="w-full flex items-center justify-center gap-2 bg-[#C79A44] text-[#12100e] text-xs font-bold uppercase py-3 rounded-xl cursor-pointer"
+                >
+                  <User size={15} /> Sign In / Register
+                </button>
+              )}
             </nav>
           </div>
         )}
