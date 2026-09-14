@@ -8,7 +8,7 @@ import { AppProvider, useApp } from './context/appcontext';
 
 // Public Components & Pages
 import Navbar from './components/navbar';
-import Footer from './components/Footer';
+import Footer from './components/footer';
 import CartDrawer from './components/cartdrawer';
 import Home from './pages/Home';
 import MenuPage from './pages/MenuPage';
