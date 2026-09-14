@@ -75,7 +75,7 @@ export default function Navbar({ cartCount = 0, onOpenCart }) {
           <Link to="/" className="flex flex-col">
             <span className="font-script text-[#C79A44] text-2xl leading-none">Savannah</span>
             <span className={`font-serif font-bold text-sm tracking-widest uppercase ${
-              isDark ? 'text-stone-400' : 'text-[#12100e]'
+              isDark ? 'text-white' : 'text-[#12100e]'
             }`}>
               Kitchen
             </span>
@@ -92,7 +92,7 @@ export default function Navbar({ cartCount = 0, onOpenCart }) {
                   className={`transition-colors hover:text-[#C79A44] ${
                     isActive 
                       ? 'text-[#C79A44]' 
-                      : isDark ? 'text-stone-300' : 'text-[#12100e]'
+                      : isDark ? 'text-white' : 'text-[#12100e]'
                   }`}
                 >
                   {item.label}

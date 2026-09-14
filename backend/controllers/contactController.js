@@ -1,31 +1,20 @@
 const db = require('../config/db');
 const nodemailer = require('nodemailer');
 
-// Configure email transporter using explicit host/port settings
+// Configure Nodemailer transporter (Port 465 Direct SSL)
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // Use STARTTLS on port 587
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+    pass: process.env.EMAIL_PASS,
   },
   tls: {
     rejectUnauthorized: false,
-    ciphers: 'SSLv3'
   },
   connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000
-});
-
-// Verify SMTP connection on server startup
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('Nodemailer SMTP Connection Error:', error);
-  } else {
-    console.log('Nodemailer SMTP server is ready to send messages!');
-  }
+  socketTimeout: 10000,
 });
 
 // Submit new contact message from customer
@@ -72,17 +61,13 @@ exports.replyToMessage = async (req, res) => {
   }
 
   try {
-    const mailOptions = {
+    await transporter.sendMail({
       from: `"Savannah Kitchen" <${process.env.EMAIL_USER}>`,
       to,
       subject: `Re: ${subject || 'Savannah Kitchen Inquiry'}`,
       text: `${message}\n\n--- Original Message ---\n${originalMessage || ''}`
-    };
+    });
 
-    // Send the email
-    await transporter.sendMail(mailOptions);
-    
-    // Update message status in database if applicable
     if (messageId) {
       await db.query(`UPDATE messages SET status = 'Replied' WHERE id = ?`, [messageId]);
     }

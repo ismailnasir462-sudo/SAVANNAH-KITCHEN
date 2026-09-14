@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const AppContext = createContext();
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'http://192.168.3.226:5000/api';
 
 export function AppProvider({ children }) {
   // --- 1. Customer Auth State (Persisted in localStorage) ---

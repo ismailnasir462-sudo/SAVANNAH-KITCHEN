@@ -1,19 +1,20 @@
 const db = require('../config/db');
 const nodemailer = require('nodemailer');
 
-// Configure Nodemailer transporter (using STARTTLS Port 587)
+// Configure Nodemailer transporter (Port 465 Direct SSL/TLS for Production & Serverless)
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // STARTTLS
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+    pass: process.env.EMAIL_PASS,
   },
   tls: {
     rejectUnauthorized: false,
-    ciphers: 'SSLv3'
-  }
+  },
+  connectionTimeout: 10000,
+  socketTimeout: 10000,
 });
 
 // Helper function to generate and send custom status emails
@@ -66,14 +67,12 @@ const sendReservationStatusEmail = async (reservation, newStatus) => {
     </div>
   `;
 
-  const mailOptions = {
+  await transporter.sendMail({
     from: `"Savannah Kitchen" <${process.env.EMAIL_USER}>`,
     to: reservation.email,
     subject: `Reservation ${newStatus.toUpperCase()} - Savannah Kitchen (RES-${reservation.id})`,
-    html: htmlContent
-  };
-
-  await transporter.sendMail(mailOptions);
+    html: htmlContent,
+  });
 };
 
 // POST /api/reservations - Create a new booking
@@ -122,7 +121,6 @@ exports.updateReservationStatus = async (req, res) => {
   }
 
   try {
-    // Fetch reservation details from the database
     const [rows] = await db.query('SELECT * FROM reservations WHERE id = ?', [id]);
     if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Reservation not found.' });
@@ -130,10 +128,8 @@ exports.updateReservationStatus = async (req, res) => {
 
     const reservation = rows[0];
 
-    // Update status in MySQL database
     await db.query('UPDATE reservations SET status = ? WHERE id = ?', [status, id]);
 
-    // Send email notification to customer
     if (reservation.email) {
       try {
         await sendReservationStatusEmail(reservation, status);
