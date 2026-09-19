@@ -24,6 +24,13 @@ export default function Hero() {
 
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  // Touch state for swipe detection
+  const [touchStartX, setTouchStartX] = useState(null);
+  const [touchEndX, setTouchEndX] = useState(null);
+
+  // Minimum distance in pixels required to count as a swipe
+  const minSwipeDistance = 50;
+
   // Automatically cycle through slides every 7 seconds
   useEffect(() => {
     const timer = setInterval(() => {
@@ -32,10 +39,41 @@ export default function Hero() {
     return () => clearInterval(timer);
   }, [slides.length]);
 
+  // Touch Event Handlers
+  const handleTouchStart = (e) => {
+    setTouchEndX(null);
+    setTouchStartX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    setTouchEndX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartX || !touchEndX) return;
+
+    const distance = touchStartX - touchEndX;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      // Swiped Left -> Next Slide
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % slides.length);
+    } else if (isRightSwipe) {
+      // Swiped Right -> Previous Slide
+      setCurrentIndex((prevIndex) => (prevIndex - 1 + slides.length) % slides.length);
+    }
+  };
+
   return (
-    <section className={`relative min-h-[85vh] flex items-center overflow-hidden transition-colors duration-300 `}>
+    <section 
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      className={`relative min-h-[85vh] flex items-center overflow-hidden transition-colors duration-300 touch-pan-y`}
+    >
       {/* Background Media Container with Smooth Cross-fade */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 select-none">
         {slides.map((slide, index) => (
           <div
             key={index}
@@ -49,7 +87,7 @@ export default function Hero() {
                 loop
                 muted
                 playsInline
-                className="w-full h-full object-cover scale-105"
+                className="w-full h-full object-cover scale-105 pointer-events-none"
               >
                 <source src={slide.url} type="video/mp4" />
               </video>
@@ -57,7 +95,7 @@ export default function Hero() {
               <img 
                 src={slide.url} 
                 alt="Restaurant slide background" 
-                className="w-full h-full object-cover scale-105" 
+                className="w-full h-full object-cover scale-105 pointer-events-none" 
               />
             )}
           </div>

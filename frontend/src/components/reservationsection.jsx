@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Calendar, Clock, Users, ArrowRight, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 
 export default function ReservationSection() {
   const navigate = useNavigate();
@@ -10,10 +10,9 @@ export default function ReservationSection() {
   const [people, setPeople] = useState('');
   const [error, setError] = useState('');
 
-  // Refs to programmatically trigger date & time pickers
+  // Native input refs to programmatically show picker on click/tap
   const dateInputRef = useRef(null);
   const timeInputRef = useRef(null);
-  const peopleSelectRef = useRef(null);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -26,7 +25,7 @@ export default function ReservationSection() {
 
     setError('');
 
-    // Format people label properly for ReservationPage.jsx
+    // Format guest count cleanly for ReservationPage.jsx
     const formattedPeople = people.includes('Person') || people.includes('People') 
       ? people 
       : `${people} ${people === '1' ? 'Person' : 'People'}`;
@@ -41,6 +40,35 @@ export default function ReservationSection() {
     });
   };
 
+  // Helper to open native date/time pickers programmatically on tap anywhere in the card
+  const handleOpenDatePicker = () => {
+    if (dateInputRef.current) {
+      try {
+        if ('showPicker' in HTMLInputElement.prototype) {
+          dateInputRef.current.showPicker();
+        } else {
+          dateInputRef.current.focus();
+        }
+      } catch (err) {
+        dateInputRef.current.focus();
+      }
+    }
+  };
+
+  const handleOpenTimePicker = () => {
+    if (timeInputRef.current) {
+      try {
+        if ('showPicker' in HTMLInputElement.prototype) {
+          timeInputRef.current.showPicker();
+        } else {
+          timeInputRef.current.focus();
+        }
+      } catch (err) {
+        timeInputRef.current.focus();
+      }
+    }
+  };
+
   return (
     <section className="bg-[#5c1c23] text-white py-12 sm:py-16 border-b border-white/10 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -51,7 +79,6 @@ export default function ReservationSection() {
           transition={{ duration: 0.6 }}
           className="grid lg:grid-cols-12 gap-8 items-center"
         >
-          
           {/* Left Text Header */}
           <div className="lg:col-span-4 text-center lg:text-left">
             <p className="font-script text-[#C79A44] text-2xl sm:text-3xl mb-1">Book Your Table</p>
@@ -67,10 +94,10 @@ export default function ReservationSection() {
           <div className="lg:col-span-8 flex flex-col gap-3 w-full">
             <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 items-stretch w-full">
               
-              {/* Date Input Box */}
+              {/* Date Input Card - Tapping ANYWHERE triggers date picker */}
               <div 
-                onClick={() => dateInputRef.current?.showPicker()}
-                className={`bg-[#47151a] border rounded-xl px-3.5 py-2.5 flex items-center justify-between text-left cursor-pointer transition-colors h-12 w-full ${
+                onClick={handleOpenDatePicker}
+                className={`relative bg-[#47151a] border rounded-xl px-3.5 py-2.5 flex items-center justify-between text-left cursor-pointer transition-colors h-12 w-full ${
                   error && !date ? 'border-[#C79A44]' : 'border-white/15 hover:border-[#C79A44]/50'
                 }`}
               >
@@ -79,22 +106,24 @@ export default function ReservationSection() {
                   <p className="text-xs font-semibold text-white mt-1 truncate leading-none">
                     {date ? date : <span className="text-stone-400 font-normal">Select Date</span>}
                   </p>
-                  <input 
-                    ref={dateInputRef}
-                    type="date" 
-                    value={date} 
-                    onChange={(e) => { setDate(e.target.value); setError(''); }}
-                    style={{ colorScheme: 'dark' }}
-                    className="sr-only" 
-                  />
                 </div>
                 <Calendar size={18} className="text-[#C79A44] shrink-0" />
+                
+                {/* Full Overlay Native Date Input */}
+                <input 
+                  ref={dateInputRef}
+                  type="date" 
+                  value={date} 
+                  onChange={(e) => { setDate(e.target.value); setError(''); }}
+                  style={{ colorScheme: 'dark' }}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" 
+                />
               </div>
 
-              {/* Time Input Box */}
+              {/* Time Input Card - Tapping ANYWHERE triggers time picker */}
               <div 
-                onClick={() => timeInputRef.current?.showPicker()}
-                className={`bg-[#47151a] border rounded-xl px-3.5 py-2.5 flex items-center justify-between text-left cursor-pointer transition-colors h-12 w-full ${
+                onClick={handleOpenTimePicker}
+                className={`relative bg-[#47151a] border rounded-xl px-3.5 py-2.5 flex items-center justify-between text-left cursor-pointer transition-colors h-12 w-full ${
                   error && !time ? 'border-[#C79A44]' : 'border-white/15 hover:border-[#C79A44]/50'
                 }`}
               >
@@ -103,32 +132,32 @@ export default function ReservationSection() {
                   <p className="text-xs font-semibold text-white mt-1 truncate leading-none">
                     {time ? time : <span className="text-stone-400 font-normal">Select Time</span>}
                   </p>
-                  <input 
-                    ref={timeInputRef}
-                    type="time" 
-                    value={time} 
-                    onChange={(e) => { setTime(e.target.value); setError(''); }}
-                    style={{ colorScheme: 'dark' }}
-                    className="sr-only" 
-                  />
                 </div>
                 <Clock size={18} className="text-[#C79A44] shrink-0" />
+
+                {/* Full Overlay Native Time Input */}
+                <input 
+                  ref={timeInputRef}
+                  type="time" 
+                  value={time} 
+                  onChange={(e) => { setTime(e.target.value); setError(''); }}
+                  style={{ colorScheme: 'dark' }}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" 
+                />
               </div>
 
-              {/* People Selector Box */}
+              {/* People Selector Card */}
               <div 
-                onClick={() => peopleSelectRef.current?.focus()}
-                className={`bg-[#47151a] border rounded-xl px-3.5 py-2.5 flex items-center justify-between text-left cursor-pointer transition-colors h-12 w-full ${
+                className={`relative bg-[#47151a] border rounded-xl px-3.5 py-2.5 flex items-center justify-between text-left transition-colors h-12 w-full ${
                   error && !people ? 'border-[#C79A44]' : 'border-white/15 hover:border-[#C79A44]/50'
                 }`}
               >
                 <div className="flex-1 min-w-0 pr-2">
                   <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-stone-400 font-bold leading-none">PEOPLE</p>
                   <select 
-                    ref={peopleSelectRef}
                     value={people} 
                     onChange={(e) => { setPeople(e.target.value); setError(''); }}
-                    className="bg-transparent text-xs font-semibold text-white outline-none w-full cursor-pointer mt-0.5 p-0 border-none leading-none appearance-none"
+                    className="bg-transparent text-xs font-semibold text-white outline-none w-full cursor-pointer mt-0.5 p-0 border-none leading-none appearance-none relative z-10"
                   >
                     <option value="" disabled className="bg-[#12100e] text-stone-400">Select Guests</option>
                     <option value="1 Person" className="bg-[#12100e] text-white">1 Person</option>
@@ -138,7 +167,7 @@ export default function ReservationSection() {
                     <option value="8+ Large Party" className="bg-[#12100e] text-white">8+ Large Party</option>
                   </select>
                 </div>
-                <Users size={18} className="text-[#C79A44] shrink-0 pointer-events-none" />
+                <Users size={18} className="text-[#C79A44] shrink-0" />
               </div>
 
               {/* Action Button */}

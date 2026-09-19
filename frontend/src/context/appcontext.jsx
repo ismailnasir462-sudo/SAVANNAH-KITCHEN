@@ -5,7 +5,7 @@ import axios from 'axios';
 axios.defaults.headers.common['ngrok-skip-browser-warning'] = 'true';
 
 // Set your live backend ngrok URL here
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||'https://cascade-sappiness-stays.ngrok-free.dev/api' || 'http://localhost:5000/api' ;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||'https://cascade-sappiness-stays.ngrok-free.dev/api';
 
 const AppContext = createContext();
 
