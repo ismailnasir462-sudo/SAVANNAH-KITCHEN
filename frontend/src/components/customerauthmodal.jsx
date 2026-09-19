@@ -26,7 +26,7 @@ export default function CustomerAuthModal({ isOpen, onClose, onContinueAsGuest }
 
   if (!isOpen) return null;
 
-  // --- Handle Google Login ---
+  // --- Handle Google Login Success ---
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       const res = await axios.post('http://localhost:5000/api/auth/google-auth', {
@@ -135,7 +135,7 @@ export default function CustomerAuthModal({ isOpen, onClose, onContinueAsGuest }
           <div className="flex justify-center">
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
-              onError={() => alert('Google Sign In Failed')}
+              onError={() => console.error('Google Sign-In failed')}
               theme={isDark ? 'filled_black' : 'outline'}
               shape="pill"
             />

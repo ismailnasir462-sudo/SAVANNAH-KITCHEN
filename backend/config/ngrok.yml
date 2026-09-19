@@ -1,0 +1,10 @@
+version: "2"
+authtoken:  3JXkYP9GWvqPvybGbePzHZOLNp2_wMFsyKaZKxiMiVm8Dswv
+tunnels:
+  frontend:
+    proto: http
+    addr: 5174
+    domain: cascade-sappiness-stays.ngrok-free.dev
+  backend:
+    proto: http
+    addr: 5000

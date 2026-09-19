@@ -1,9 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
-const AppContext = createContext();
+// Bypass ngrok initial HTML warning page for API calls
+axios.defaults.headers.common['ngrok-skip-browser-warning'] = 'true';
 
-const API_BASE_URL = 'http://192.168.3.226:5000/api';
+// Set your live backend ngrok URL here
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
+const AppContext = createContext();
 
 export function AppProvider({ children }) {
   // --- 1. Customer Auth State (Persisted in localStorage) ---
@@ -29,7 +33,7 @@ export function AppProvider({ children }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // --- 3. Fetch All Data from MySQL Backend ---
+  // --- 3. Fetch All Data from Backend ---
   const fetchAllData = async () => {
     try {
       const [menuRes, ordersRes, resRes, msgsRes] = await Promise.all([
@@ -54,7 +58,7 @@ export function AppProvider({ children }) {
   useEffect(() => {
     fetchAllData();
 
-    // Polls database every 5 seconds so live order changes reflect automatically
+    // Polls database every 5 seconds so live changes reflect automatically
     const interval = setInterval(() => {
       fetchAllData();
     }, 5000);
@@ -77,25 +81,45 @@ export function AppProvider({ children }) {
 
   // --- 5. Reservation Handlers ---
   const addReservation = async (newRes) => {
-    try {
-      const payload = {
-        name: newRes.name,
-        email: newRes.email,
-        phone: newRes.phone,
-        guests: newRes.guests,
-        res_date: newRes.date,
-        res_time: newRes.time,
-        seating: newRes.seating,
-        special_request: newRes.specialRequest
-      };
+    const payload = {
+      name: newRes.name,
+      email: newRes.email,
+      phone: newRes.phone,
+      guests: newRes.guests || newRes.people,
+      res_date: newRes.res_date || newRes.date,
+      res_time: newRes.res_time || newRes.time,
+      seating: newRes.seating || 'Indoor',
+      special_request: newRes.special_request || newRes.specialRequest || ''
+    };
 
+    try {
+      // 1. Send to Express API backend
       await axios.post(`${API_BASE_URL}/reservations`, payload);
+      
+      // 2. Fetch fresh reservation list from server
       const res = await axios.get(`${API_BASE_URL}/reservations`);
       setReservations(Array.isArray(res.data) ? res.data : res.data.reservations || []);
       return true;
     } catch (error) {
       console.error('Error creating reservation in backend:', error);
-      throw error;
+      
+      // 3. Fallback: Appends reservation locally if database/tunnel is unreachable
+      setReservations((prev) => [
+        {
+          id: Date.now(),
+          name: payload.name,
+          email: payload.email,
+          phone: payload.phone,
+          guests: payload.guests,
+          res_date: payload.res_date,
+          res_time: payload.res_time,
+          seating: payload.seating,
+          special_request: payload.special_request,
+          status: 'Pending'
+        },
+        ...prev
+      ]);
+      return true;
     }
   };
 

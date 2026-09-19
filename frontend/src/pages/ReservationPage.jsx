@@ -1,17 +1,22 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, Users, Utensils, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { useTheme } from '../context/themecontext';
-import { useApp } from '../context/appcontext'; // 1. Added import
+import { useApp } from '../context/appcontext';
 
 export default function ReservationPage() {
   const { theme } = useTheme();
-  const { addReservation } = useApp(); // 2. Consume global function
+  const { addReservation } = useApp();
   const isDark = theme === 'dark';
+  const location = useLocation();
 
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
-  const [people, setPeople] = useState('');
+  // Initial State initialized from ReservationSection navigation state if present
+  const initialData = location.state || {};
+
+  const [date, setDate] = useState(initialData.date || '');
+  const [time, setTime] = useState(initialData.time || '');
+  const [people, setPeople] = useState(initialData.people || '');
   const [seating, setSeating] = useState('Indoor');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -23,6 +28,15 @@ export default function ReservationPage() {
 
   const dateInputRef = useRef(null);
   const timeInputRef = useRef(null);
+
+  // Sync state if user navigates back and forth or passes state via router
+  useEffect(() => {
+    if (location.state) {
+      if (location.state.date) setDate(location.state.date);
+      if (location.state.time) setTime(location.state.time);
+      if (location.state.people) setPeople(location.state.people);
+    }
+  }, [location.state]);
 
   const validateEmail = (emailStr) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailStr.trim());
   const validatePhone = (phoneStr) => /^(\+233\d{9}|0\d{9})$/.test(phoneStr.trim());
@@ -45,16 +59,19 @@ export default function ReservationPage() {
       return;
     }
 
-    // 3. Send reservation to Admin context
+    // Send reservation to Admin context & backend (includes MySQL field mappings)
     addReservation({
       name,
       email,
       phone,
       guests: people,
       date,
+      res_date: date,
       time,
+      res_time: time,
       seating,
-      specialRequest
+      specialRequest,
+      special_request: specialRequest
     });
 
     setError('');
@@ -63,7 +80,7 @@ export default function ReservationPage() {
 
   return (
     <div className={`py-16 px-5 md:px-8 max-w-7xl mx-auto transition-colors duration-300 ${
-      isDark ? 'text-[#12100e]' : 'text-[#12100e]'
+      isDark ? 'text-white' : 'text-[#12100e]'
     }`}>
       {/* Background Image Layer */}
       <div className="absolute inset-0 z-0 pointer-events-none">
@@ -134,6 +151,7 @@ export default function ReservationPage() {
             }`}
           >
             <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Step 1: Contact Details */}
               <div>
                 <h3 className={`font-sans text-lg font-bold mb-4 flex items-center gap-2 border-b pb-2 ${
                   isDark ? 'text-white border-white/10' : 'text-[#12100e] border-black/10'
@@ -198,6 +216,7 @@ export default function ReservationPage() {
                 </div>
               </div>
 
+              {/* Step 2: Date & Guest Count */}
               <div>
                 <h3 className={`font-sans text-lg font-bold mb-4 flex items-center gap-2 border-b pb-2 ${
                   isDark ? 'text-white border-white/10' : 'text-[#12100e] border-black/10'
@@ -306,6 +325,7 @@ export default function ReservationPage() {
                 </div>
               </div>
 
+              {/* Step 3: Preferences */}
               <div>
                 <h3 className={`font-sans text-lg font-bold mb-4 flex items-center gap-2 border-b pb-2 ${
                   isDark ? 'text-white border-white/10' : 'text-[#12100e] border-black/10'
