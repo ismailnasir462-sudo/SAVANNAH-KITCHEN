@@ -33,6 +33,8 @@ app.use('/api/menu', require('./routes/menuRoutes'));
 app.use('/api/reservations', require('./routes/reservationRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
 app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/chat', require('./routes/chatRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
 
 // --- Server Startup ---
 const PORT = process.env.PORT || 5000;

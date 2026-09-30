@@ -4,17 +4,17 @@ const nodemailer = require('nodemailer');
 // Configure Nodemailer transporter (Port 465 Direct SSL/TLS for Production & Serverless)
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
+  port: 587,
+  secure: false, // STARTTLS
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    pass: process.env.EMAIL_PASS
   },
   tls: {
-    rejectUnauthorized: false,
+    rejectUnauthorized: false
   },
-  connectionTimeout: 10000,
-  socketTimeout: 10000,
+  connectionTimeout: 15000,
+  socketTimeout: 15000
 });
 
 // Helper function to generate and send custom status emails

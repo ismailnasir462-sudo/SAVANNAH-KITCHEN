@@ -5,6 +5,7 @@ import { FacebookProvider } from 'react-facebook';
 
 import { ThemeProvider, useTheme } from './context/themecontext';
 import { AppProvider, useApp } from './context/appcontext';
+import LiveChatWidget from './components/LiveChatWidget';
 
 // Public Components & Pages
 import Navbar from './components/navbar';
@@ -36,26 +37,22 @@ function MainLayout() {
   const INACTIVITY_LIMIT_MS = 15 * 60 * 1000; // 15 minutes
 
   useEffect(() => {
-    // Only track inactivity if a customer is logged in and not on the admin route
     if (!currentUser || isAdminRoute) return;
 
-    // Update the timestamp whenever the user interacts
     const updateActivity = () => {
       lastActivityRef.current = Date.now();
     };
 
-    // User activity events to listen for (passive for better performance)
     const activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
     activityEvents.forEach(event => window.addEventListener(event, updateActivity, { passive: true }));
 
-    // Check every 1 minute if 15 minutes have passed since the last activity
     const intervalId = setInterval(() => {
       if (Date.now() - lastActivityRef.current >= INACTIVITY_LIMIT_MS) {
         alert("Session expired due to 15 minutes of inactivity. Logging out.");
         if (logoutCustomer) logoutCustomer();
         navigate('/', { replace: true });
       }
-    }, 60000); // Runs once every 60 seconds
+    }, 60000);
 
     return () => {
       clearInterval(intervalId);
@@ -63,22 +60,12 @@ function MainLayout() {
     };
   }, [currentUser, isAdminRoute, navigate, logoutCustomer]);
 
-  // --- Disable Browser Scroll Restoration & Redirect on Refresh ---
+  // --- Disable Browser Scroll Restoration ---
   useLayoutEffect(() => {
     if ('scrollRestoration' in window.history) {
       window.history.scrollRestoration = 'manual';
     }
-
-    const navEntries = performance.getEntriesByType('navigation');
-    const isReload = navEntries.length > 0 && navEntries[0].type === 'reload';
-
-    if (isReload) {
-      document.documentElement.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-
-      if (!isAdminRoute && location.pathname !== '/') {
-        navigate('/', { replace: true });
-      }
-    }
+    document.documentElement.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, []);
 
   // --- Scroll to top on ANY route change ---
@@ -149,7 +136,14 @@ function MainLayout() {
     <div className={`min-h-screen flex flex-col justify-between transition-colors duration-300 ${
       theme === 'dark' ? 'bg-[#12100e] text-white' : 'bg-[#fcfbf7] text-[#12100e]'
     }`}>
-      {!isAdminRoute && <Navbar cartCount={cartCount} onOpenCart={() => setIsCartOpen(true)} />}
+      {!isAdminRoute && (
+        <Navbar 
+          cartCount={cartCount} 
+          onOpenCart={() => setIsCartOpen(true)} 
+          currentUser={currentUser}
+          onLogout={logoutCustomer}
+        />
+      )}
 
       <main className="flex-grow">
         <Routes>
@@ -176,6 +170,7 @@ function MainLayout() {
           onClearCart={clearCart}
         />
       )}
+      {!isAdminRoute && <LiveChatWidget />}
     </div>
   );
 }

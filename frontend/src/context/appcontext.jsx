@@ -4,8 +4,8 @@ import axios from 'axios';
 // Bypass ngrok initial HTML warning page for API calls
 axios.defaults.headers.common['ngrok-skip-browser-warning'] = 'true';
 
-// Set your live backend ngrok URL here
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||'https://cascade-sappiness-stays.ngrok-free.dev/api';
+// Set live backend ngrok URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://cascade-sappiness-stays.ngrok-free.dev/api';
 
 const AppContext = createContext();
 
@@ -16,14 +16,24 @@ export function AppProvider({ children }) {
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
-  const loginCustomer = (userData) => {
+  const loginCustomer = (userData, navigateCallback) => {
     setCurrentUser(userData);
     localStorage.setItem('savannah_customer_user', JSON.stringify(userData));
+    if (typeof navigateCallback === 'function') {
+      navigateCallback('/');
+    } else {
+      window.location.href = '/';
+    }
   };
 
-  const logoutCustomer = () => {
+  const logoutCustomer = (navigateCallback) => {
     setCurrentUser(null);
     localStorage.removeItem('savannah_customer_user');
+    if (typeof navigateCallback === 'function') {
+      navigateCallback('/');
+    } else {
+      window.location.href = '/';
+    }
   };
 
   // --- 2. Database Collection States ---
@@ -31,22 +41,32 @@ export function AppProvider({ children }) {
   const [orders, setOrders] = useState([]);
   const [reservations, setReservations] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [adminChats, setAdminChats] = useState([]);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // --- 3. Fetch All Data from Backend ---
-  const fetchAllData = async () => {
+  // --- 3. Fetch All Data from Backend (Supports activeUserId to clear read state) ---
+  const fetchAllData = async (activeUserId = null) => {
     try {
-      const [menuRes, ordersRes, resRes, msgsRes] = await Promise.all([
+      const activeParam = activeUserId ? `?active_user_id=${activeUserId}` : '';
+
+      const [menuRes, ordersRes, resRes, msgsRes, chatRes] = await Promise.all([
         axios.get(`${API_BASE_URL}/menu`),
         axios.get(`${API_BASE_URL}/orders`),
         axios.get(`${API_BASE_URL}/reservations`),
-        axios.get(`${API_BASE_URL}/contact`)
+        axios.get(`${API_BASE_URL}/contact`),
+        axios.get(`${API_BASE_URL}/chat/admin/list${activeParam}`)
       ]);
 
       setMenuItems(Array.isArray(menuRes.data) ? menuRes.data : menuRes.data.menuItems || []);
       setOrders(ordersRes.data.orders || (Array.isArray(ordersRes.data) ? ordersRes.data : []));
       setReservations(Array.isArray(resRes.data) ? resRes.data : resRes.data.reservations || []);
       setMessages(Array.isArray(msgsRes.data) ? msgsRes.data : msgsRes.data.messages || []);
+
+      if (chatRes.data && chatRes.data.success) {
+        setAdminChats(chatRes.data.chats || []);
+        setUnreadChatCount(chatRes.data.total_unread || 0);
+      }
     } catch (error) {
       console.error('Error fetching data from API backend:', error);
     } finally {
@@ -93,17 +113,13 @@ export function AppProvider({ children }) {
     };
 
     try {
-      // 1. Send to Express API backend
       await axios.post(`${API_BASE_URL}/reservations`, payload);
-      
-      // 2. Fetch fresh reservation list from server
       const res = await axios.get(`${API_BASE_URL}/reservations`);
       setReservations(Array.isArray(res.data) ? res.data : res.data.reservations || []);
       return true;
     } catch (error) {
       console.error('Error creating reservation in backend:', error);
       
-      // 3. Fallback: Appends reservation locally if database/tunnel is unreachable
       setReservations((prev) => [
         {
           id: Date.now(),
@@ -130,7 +146,7 @@ export function AppProvider({ children }) {
         setReservations((prev) =>
           prev.map((r) => (r.id === id ? { ...r, status } : r))
         );
-        fetchAllData(); // Sync live data across dashboard
+        fetchAllData();
       }
     } catch (error) {
       console.error('Error updating reservation status:', error);
@@ -155,7 +171,6 @@ export function AppProvider({ children }) {
 
       const res = await axios.post(`${API_BASE_URL}/orders`, payload);
       
-      // Immediately refresh orders list
       const fetchRes = await axios.get(`${API_BASE_URL}/orders`);
       setOrders(fetchRes.data.orders || (Array.isArray(fetchRes.data) ? fetchRes.data : []));
       
@@ -249,7 +264,8 @@ export function AppProvider({ children }) {
       menuItems, addMenuItem, updateMenuItem, deleteMenuItem,
       orders, addOrder, updateOrderStatus,
       reservations, addReservation, updateReservationStatus,
-      messages, addMessage
+      messages, addMessage,
+      adminChats, unreadChatCount, setAdminChats
     }}>
       {children}
     </AppContext.Provider>

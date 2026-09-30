@@ -5,25 +5,31 @@ import {
   Calendar, 
   ShoppingBag, 
   MessageSquare, 
+  MessageCircle,
   DollarSign,
   RefreshCw,
   TrendingUp,
   Clock,
   UserCheck,
-  CheckCircle2,
-  AlertCircle,
   Sun,
   Moon,
   MapPin,
   CreditCard,
   Mail,
   Send,
-  X
+  X,
+  Megaphone,
+  AlertTriangle,
+  Tag,
+  Info
 } from 'lucide-react';
 import axios from 'axios';
 import { useApp } from '../context/appcontext';
 import AdminLogin from './components/adminlogin';
 import MenuEditor from './components/menueditor';
+import AdminChatTab from './components/AdminChatTab';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://cascade-sappiness-stays.ngrok-free.dev/api';
 
 export default function AdminDashboard() {
   // --- Independent Local Admin Theme State ---
@@ -49,6 +55,36 @@ export default function AdminDashboard() {
   });
 
   const [activeTab, setActiveTab] = useState('overview');
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
+
+  // --- Announcement Tab State ---
+  const [announcement, setAnnouncement] = useState({
+    title: '',
+    type: 'general', // 'general', 'urgent', 'offer'
+    subject: '',
+    message: ''
+  });
+  const [sendingAnnouncement, setSendingAnnouncement] = useState(false);
+
+  // Poll total unread customer chats globally across all tabs
+  const fetchUnreadChats = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/chat/admin/list`);
+      if (res.data && res.data.success) {
+        setUnreadChatCount(res.data.total_unread || 0);
+      }
+    } catch (err) {
+      console.error('Error fetching unread chat count:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchUnreadChats();
+      const interval = setInterval(fetchUnreadChats, 4000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated]);
 
   // --- In-App Email Reply Modal State ---
   const [replyModal, setReplyModal] = useState({ open: false, msg: null });
@@ -58,7 +94,7 @@ export default function AdminDashboard() {
   const inactivityTimerRef = useRef(null);
   const INACTIVITY_LIMIT_MS = 15 * 60 * 1000;
 
-  // Sync database when switching to 'orders' or 'overview' tabs
+  // Sync database when switching tabs
   useEffect(() => {
     if (isAuthenticated) {
       fetchAllData();
@@ -100,10 +136,11 @@ export default function AdminDashboard() {
   // Handler to send email reply via Express API
   const handleSendReply = async (e) => {
     e.preventDefault();
+    if (!replyModal.msg) return;
     setSending(true);
 
     try {
-      await axios.post('http://localhost:5000/api/contact/reply', {
+      await axios.post(`${API_BASE_URL}/contact/reply`, {
         to: replyModal.msg.email,
         subject: replyModal.msg.subject,
         message: replyText,
@@ -112,14 +149,46 @@ export default function AdminDashboard() {
       });
 
       alert(`Reply sent successfully to ${replyModal.msg.email}!`);
+      
       setReplyModal({ open: false, msg: null });
       setReplyText('');
-      fetchAllData(); // Refresh list to reflect updated status
+      
+      if (fetchAllData) fetchAllData();
     } catch (error) {
       console.error("Failed to send email:", error);
       alert(error.response?.data?.message || "Failed to send reply. Please check server email configurations.");
     } finally {
       setSending(false);
+    }
+  };
+
+  // Handler to send Bulk Email Announcement
+  const handleSendAnnouncement = async (e) => {
+    e.preventDefault();
+
+    if (!announcement.subject.trim() || !announcement.message.trim()) {
+      alert("Please enter both a subject line and announcement message.");
+      return;
+    }
+
+    const confirmSend = window.confirm(
+      "Are you sure you want to broadcast this email announcement to ALL customers in the database?"
+    );
+    if (!confirmSend) return;
+
+    setSendingAnnouncement(true);
+
+    try {
+      const res = await axios.post(`${API_BASE_URL}/admin/announcement/send`, announcement);
+      if (res.data && res.data.success) {
+        alert(res.data.message || "Announcement broadcasted successfully!");
+        setAnnouncement({ title: '', type: 'general', subject: '', message: '' });
+      }
+    } catch (error) {
+      console.error("Bulk announcement error:", error);
+      alert(error.response?.data?.message || "Failed to send announcement. Verify backend mail settings.");
+    } finally {
+      setSendingAnnouncement(false);
     }
   };
 
@@ -133,6 +202,7 @@ export default function AdminDashboard() {
   const preparingOrders = orders.filter(o => o.status?.toLowerCase() === 'preparing').length;
   const completedOrders = orders.filter(o => ['completed', 'delivered'].includes(o.status?.toLowerCase())).length;
   const pendingReservations = reservations.filter(r => r.status?.toLowerCase() === 'pending').length;
+  const unrepliedMessageCount = messages.filter(m => m.status !== 'Replied').length;
 
   const salesByStatus = [
     { label: 'Completed / Delivered', value: completedOrders, color: '#22c55e' },
@@ -145,8 +215,8 @@ export default function AdminDashboard() {
       isDark ? 'bg-[#12100e] text-white' : 'bg-[#fcfbf7] text-[#12100e]'
     }`}>
 
-      {/* Sidebar */}
-      <aside className={`w-full md:w-64 border-r p-6 shrink-0 flex flex-col justify-between ${
+      {/* Sidebar Navigation */}
+      <aside className={`w-full md:w-64 border-r p-5 shrink-0 flex flex-col justify-between ${
         isDark ? 'bg-[#1a1714] border-white/10' : 'bg-white border-black/10'
       }`}>
         <div>
@@ -163,7 +233,7 @@ export default function AdminDashboard() {
             </button>
           </div>
 
-          {/* Manual Database Refresh Button */}
+          {/* Database Sync Button */}
           <button 
             onClick={fetchAllData}
             className="w-full mb-4 flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-[#C79A44]/40 text-[#C79A44] text-xs font-bold hover:bg-[#C79A44]/10 transition-colors cursor-pointer"
@@ -171,30 +241,38 @@ export default function AdminDashboard() {
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Sync Database
           </button>
 
-          <nav className="space-y-2">
+          <nav className="space-y-1.5">
             {[
               { id: 'overview', label: 'Overview', icon: LayoutDashboard },
               { id: 'orders', label: 'Live Orders', icon: ShoppingBag, count: pendingOrders },
               { id: 'reservations', label: 'Reservations', icon: Calendar, count: pendingReservations },
-              { id: 'messages', label: 'Messages', icon: MessageSquare, count: messages.filter(m => m.status === 'Unread').length },
+              { id: 'chats', label: 'Live Support', icon: MessageCircle, count: unreadChatCount },
+              { id: 'messages', label: 'Contact Messages', icon: MessageSquare, count: unrepliedMessageCount },
+              { id: 'announcements', label: 'Announcements', icon: Megaphone },
               { id: 'menu', label: 'Menu Editor', icon: Utensils }
             ].map(tab => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    if (tab.id === 'chats') {
+                      setUnreadChatCount(0);
+                    }
+                  }}
+                  className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
                     activeTab === tab.id
                       ? 'bg-[#C79A44] text-[#12100e] shadow-md'
                       : isDark ? 'hover:bg-white/5 text-stone-300' : 'hover:bg-black/5 text-stone-700'
                   }`}
                 >
-                  <span className="flex items-center gap-3">
-                    <Icon size={16} /> {tab.label}
+                  <span className="flex items-center gap-2.5 whitespace-nowrap min-w-0 truncate">
+                    <Icon size={16} className="shrink-0" />
+                    <span className="truncate">{tab.label}</span>
                   </span>
                   {tab.count > 0 && (
-                    <span className="bg-red-500 text-white rounded-full text-[10px] px-2 py-0.5 font-bold animate-pulse">
+                    <span className="bg-red-500 text-white rounded-full text-[10px] px-2 py-0.5 font-bold animate-pulse shrink-0 ml-1">
                       {tab.count}
                     </span>
                   )}
@@ -204,11 +282,11 @@ export default function AdminDashboard() {
           </nav>
         </div>
 
-        {/* Sidebar Theme Switcher */}
+        {/* Sidebar Theme Toggle */}
         <div className="pt-6 border-t border-stone-500/20 mt-6">
           <button
             onClick={toggleAdminTheme}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+            className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
               isDark 
                 ? 'bg-[#12100e] border-white/10 text-stone-300 hover:text-white' 
                 : 'bg-[#fcfbf7] border-black/10 text-stone-700 hover:text-black'
@@ -225,15 +303,14 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* Main Content Area */}
       <main className="flex-1 p-6 md:p-10 overflow-x-hidden">
         
-        {/* --- OVERVIEW TAB --- */}
+        {/* TAB 1: OVERVIEW */}
         {activeTab === 'overview' && (
           <div className="space-y-8">
             <h1 className="font-serif text-3xl font-bold">Dashboard Overview</h1>
             
-            {/* KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
                 { title: "Total Revenue", val: `₵${totalSales.toFixed(2)}`, icon: DollarSign, color: "text-emerald-500" },
@@ -258,7 +335,6 @@ export default function AdminDashboard() {
               })}
             </div>
 
-            {/* Visual Charts Row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className={`p-6 border rounded-3xl space-y-4 ${
                 isDark ? 'bg-[#1a1714] border-white/10' : 'bg-white border-black/10 shadow-sm'
@@ -295,7 +371,7 @@ export default function AdminDashboard() {
                 isDark ? 'bg-[#1a1714] border-white/10' : 'bg-white border-black/10 shadow-sm'
               }`}>
                 <h3 className="font-bold text-sm text-[#C79A44] uppercase tracking-wider flex items-center gap-2">
-                  <Clock size={16} /> Real-time Restaurant Metrics
+                  <Clock size={16} /> Real-time Metrics
                 </h3>
 
                 <div className="grid grid-cols-2 gap-4 pt-2">
@@ -317,16 +393,15 @@ export default function AdminDashboard() {
                       <span className="text-xs font-bold uppercase">Pending Tables</span>
                     </div>
                     <p className="text-2xl font-bold">{pendingReservations}</p>
-                    <p className="text-[11px] text-stone-400">Awaiting Booking Confirmation</p>
+                    <p className="text-[11px] text-stone-400">Awaiting Confirmation</p>
                   </div>
                 </div>
               </div>
-
             </div>
           </div>
         )}
 
-        {/* --- LIVE ORDERS TAB --- */}
+        {/* TAB 2: ORDERS */}
         {activeTab === 'orders' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -422,7 +497,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* --- RESERVATIONS TAB --- */}
+        {/* TAB 3: RESERVATIONS */}
         {activeTab === 'reservations' && (
           <div className="space-y-6">
             <h1 className="font-serif text-3xl font-bold">Table Reservations</h1>
@@ -484,49 +559,89 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* --- MESSAGES TAB --- */}
+        {/* TAB 4: LIVE SUPPORT CHAT */}
+        {activeTab === 'chats' && (
+          <div className="space-y-6">
+            <h1 className="font-serif text-3xl font-bold">Live Support Chat</h1>
+            <AdminChatTab isDark={isDark} onChatsUpdated={fetchUnreadChats} />
+          </div>
+        )}
+
+        {/* TAB 5: CONTACT MESSAGES */}
         {activeTab === 'messages' && (
           <div className="space-y-6">
-            <h1 className="font-serif text-3xl font-bold">Customer Messages</h1>
+            <div className="flex items-center justify-between">
+              <h1 className="font-serif text-3xl font-bold">Customer Messages</h1>
+              {unrepliedMessageCount > 0 && (
+                <span className="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                  {unrepliedMessageCount} Pending Reply
+                </span>
+              )}
+            </div>
+
             {messages.length === 0 ? (
               <p className="text-xs text-stone-400 italic">No messages in database.</p>
             ) : (
               <div className="space-y-4">
-                {messages.map(msg => (
-                  <div key={msg.id} className={`p-6 border rounded-2xl space-y-4 ${
-                    isDark ? 'bg-[#1a1714] border-white/10' : 'bg-white border-black/10 shadow-sm'
-                  }`}>
-                    <div className="flex justify-between items-start border-b pb-3 border-stone-500/20">
-                      <div>
-                        <h3 className="font-bold text-sm">{msg.name} ({msg.email})</h3>
-                        <p className="text-xs text-[#C79A44] mt-0.5">Subject: {msg.subject}</p>
+                {messages.map(msg => {
+                  const isPendingReply = msg.status !== 'Replied';
+
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`p-6 rounded-2xl space-y-4 transition-all duration-300 border ${
+                        isPendingReply
+                          ? 'border-red-500/80 shadow-[0_0_15px_rgba(239,68,68,0.2)] bg-red-500/5'
+                          : isDark
+                          ? 'bg-[#1a1714] border-white/10'
+                          : 'bg-white border-black/10 shadow-sm'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start border-b pb-3 border-stone-500/20">
+                        <div>
+                          <h3 className="font-bold text-sm flex items-center gap-2">
+                            {msg.name} ({msg.email})
+                            {isPendingReply && (
+                              <span className="inline-block w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                            )}
+                          </h3>
+                          <p className="text-xs text-[#C79A44] mt-0.5">Subject: {msg.subject}</p>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`text-[10px] uppercase font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 ${
+                              isPendingReply
+                                ? 'bg-red-600 text-white animate-pulse'
+                                : 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/30'
+                            }`}
+                          >
+                            {isPendingReply && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                            {isPendingReply ? 'Needs Reply' : 'Replied'}
+                          </span>
+
+                          <button
+                            onClick={() => setReplyModal({ open: true, msg })}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#C79A44] text-[#12100e] text-xs font-bold hover:bg-[#b3872f] transition-colors cursor-pointer"
+                          >
+                            <Mail size={14} /> Reply
+                          </button>
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-3">
-                        <span className="text-[10px] uppercase font-bold px-2.5 py-1 rounded-full bg-[#C79A44]/10 text-[#C79A44]">
-                          {msg.status || 'Received'}
-                        </span>
-
-                        <button
-                          onClick={() => setReplyModal({ open: true, msg })}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#C79A44] text-[#12100e] text-xs font-bold hover:bg-[#b3872f] transition-colors cursor-pointer"
-                        >
-                          <Mail size={14} /> Reply
-                        </button>
-                      </div>
+                      <p className={`text-xs leading-relaxed ${
+                        isDark ? 'text-white' : 'text-[#12100e]'
+                      }`}>
+                        {msg.text}
+                      </p>
                     </div>
-
-                    <p className={`text-xs leading-relaxed ${
-                      isDark ? 'text-white' : 'text-[#12100e]'
-                    }`}>
-                      {msg.text}
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
-            {/* In-App Email Reply Popup Modal */}
+            {/* Email Reply Modal */}
             {replyModal.open && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                 <div className={`w-full max-w-lg rounded-3xl border p-6 space-y-4 shadow-2xl ${
@@ -581,7 +696,149 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* --- MENU EDITOR TAB --- */}
+        {/* TAB 6: BULK ANNOUNCEMENTS */}
+        {activeTab === 'announcements' && (
+          <div className="space-y-8">
+            <div>
+              <h1 className="font-serif text-3xl font-bold flex items-center gap-3">
+                <Megaphone className="text-[#C79A44]" /> Broadcast Announcement
+              </h1>
+              <p className="text-xs text-stone-400 mt-1">
+                Send an official announcement, urgent alert, or promotional offer via email to all registered customers in bulk.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              {/* Form Input Container */}
+              <div className={`lg:col-span-7 p-6 border rounded-3xl space-y-6 ${
+                isDark ? 'bg-[#1a1714] border-white/10' : 'bg-white border-black/10 shadow-sm'
+              }`}>
+                <form onSubmit={handleSendAnnouncement} className="space-y-5">
+                  {/* Announcement Type Selection */}
+                  <div>
+                    <label className="block text-xs uppercase font-bold text-stone-400 mb-2">Announcement Category</label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { id: 'general', label: 'General Update', icon: Info, color: 'border-[#C79A44] text-[#C79A44]' },
+                        { id: 'urgent', label: 'Urgent Notice', icon: AlertTriangle, color: 'border-red-500 text-red-500' },
+                        { id: 'offer', label: 'Special Offer', icon: Tag, color: 'border-emerald-500 text-emerald-500' }
+                      ].map((cat) => {
+                        const Icon = cat.icon;
+                        const isSelected = announcement.type === cat.id;
+                        return (
+                          <button
+                            type="button"
+                            key={cat.id}
+                            onClick={() => setAnnouncement((prev) => ({ ...prev, type: cat.id }))}
+                            className={`p-3 rounded-2xl border text-xs font-bold flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                              isSelected
+                                ? `bg-[#C79A44]/10 ${cat.color} ring-2 ring-current`
+                                : isDark ? 'border-white/10 text-stone-400 hover:border-white/20' : 'border-black/10 text-stone-600 hover:border-black/20'
+                            }`}
+                          >
+                            <Icon size={18} />
+                            <span className="text-[11px]">{cat.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Announcement Title */}
+                  <div>
+                    <label className="block text-xs uppercase font-bold text-stone-400 mb-1.5">Announcement Title</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Weekend Special Discount 20% Off!"
+                      value={announcement.title}
+                      onChange={(e) => setAnnouncement((prev) => ({ ...prev, title: e.target.value }))}
+                      className={`w-full border rounded-xl py-2.5 px-3.5 text-xs outline-none focus:border-[#C79A44] ${
+                        isDark ? 'bg-[#12100e] border-white/15' : 'bg-[#fcfbf7] border-black/15'
+                      }`}
+                    />
+                  </div>
+
+                  {/* Email Subject Line */}
+                  <div>
+                    <label className="block text-xs uppercase font-bold text-stone-400 mb-1.5">Email Subject Line *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Exclusive Weekend Offer at Savannah Kitchen"
+                      value={announcement.subject}
+                      onChange={(e) => setAnnouncement((prev) => ({ ...prev, subject: e.target.value }))}
+                      className={`w-full border rounded-xl py-2.5 px-3.5 text-xs outline-none focus:border-[#C79A44] ${
+                        isDark ? 'bg-[#12100e] border-white/15' : 'bg-[#fcfbf7] border-black/15'
+                      }`}
+                    />
+                  </div>
+
+                  {/* Message Body */}
+                  <div>
+                    <label className="block text-xs uppercase font-bold text-stone-400 mb-1.5">Message Body *</label>
+                    <textarea
+                      rows={6}
+                      required
+                      placeholder="Type your official announcement or offer details here..."
+                      value={announcement.message}
+                      onChange={(e) => setAnnouncement((prev) => ({ ...prev, message: e.target.value }))}
+                      className={`w-full border rounded-xl p-3.5 text-xs leading-relaxed outline-none focus:border-[#C79A44] ${
+                        isDark ? 'bg-[#12100e] border-white/15' : 'bg-[#fcfbf7] border-black/15'
+                      }`}
+                    />
+                  </div>
+
+                  {/* Submit Button */}
+                  <button
+                    type="submit"
+                    disabled={sendingAnnouncement}
+                    className="w-full bg-[#C79A44] text-[#12100e] font-bold text-xs uppercase py-3.5 rounded-xl hover:bg-[#b3872f] transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    <Send size={16} />
+                    {sendingAnnouncement ? 'Broadcasting Email Announcement...' : 'Broadcast Announcement via Email'}
+                  </button>
+                </form>
+              </div>
+
+              {/* Email Live Preview Container */}
+              <div className="lg:col-span-5 space-y-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-stone-400">Live Email Preview</p>
+                <div className="p-6 rounded-3xl border bg-[#12100e] text-white space-y-4 shadow-xl border-white/10">
+                  <div className="text-center border-b border-white/10 pb-4">
+                    <p className="font-script text-[#C79A44] text-xl">Savannah Kitchen</p>
+                    <p className="text-[10px] text-stone-400 uppercase tracking-widest mt-0.5">Customer Announcement</p>
+                  </div>
+
+                  <div>
+                    <span className={`text-[10px] font-bold uppercase px-3 py-1 rounded-full text-white ${
+                      announcement.type === 'urgent'
+                        ? 'bg-red-600'
+                        : announcement.type === 'offer'
+                        ? 'bg-emerald-600'
+                        : 'bg-[#C79A44]'
+                    }`}>
+                      {announcement.type === 'urgent' ? 'URGENT NOTICE' : announcement.type === 'offer' ? 'SPECIAL OFFER' : 'ANNOUNCEMENT'}
+                    </span>
+                  </div>
+
+                  <h3 className="font-bold text-base text-white">
+                    {announcement.title || announcement.subject || 'Announcement Subject Title'}
+                  </h3>
+
+                  <p className="text-xs leading-relaxed text-stone-300 whitespace-pre-line min-h-[100px]">
+                    {announcement.message || 'Your broadcast message content will appear here in real time as you type.'}
+                  </p>
+
+                  <div className="border-t border-white/10 pt-4 text-center">
+                    <p className="text-[10px] text-stone-500">Thank you for dining with Savannah Kitchen.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 7: MENU EDITOR */}
         {activeTab === 'menu' && <MenuEditor isDark={isDark} />}
       </main>
     </div>
